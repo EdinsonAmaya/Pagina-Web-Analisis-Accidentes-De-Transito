@@ -1,0 +1,261 @@
+---
+const informacion = await fetch("http://localhost:5000/informacion");
+const dataInformacion = await informacion.json();
+const columnasInformacion = dataInformacion.columnas;
+const barriosInformacion = dataInformacion.top_barrios;
+const registrosTotalesInformacion = dataInformacion.total_registros;
+---
+
+<div id="container">
+    <h1>Accidentes de transito en la ciudad de Bucaramanga</h1>
+    <h2>En los años 2012-2023</h2>
+    <p>
+        Espacio diseñado para el analisis de la información sobre la cantidad de
+        accidentes de transito registrados en la ciudad de Bucaramanga en los
+        años 2012-2023.
+    </p>
+
+    <h3>Total de registros usados:</h3>
+
+    <p>{registrosTotalesInformacion}</p>
+
+    <h3>Columnas:</h3>
+
+    <div>
+        {columnasInformacion.map((columna: any) => <li>{columna}</li>)}
+    </div>
+
+    <h3>Barrios con una mayor cantidad de Accidentes</h3>
+
+    <div>
+        <table>
+            <tr>
+                <th>Nombre Barrio</th>
+                <th>Cantidad de Accidentes</th>
+            </tr>
+            {
+                barriosInformacion.map((Barrio: any) => (
+                    <tr>
+                        <>
+                            <th>{Barrio.barrio}</th>
+                            <th>{Barrio.conteo}</th>
+                        </>
+                    </tr>
+                ))
+            }
+        </table>
+    </div>
+
+    <h3>Accidentes de Tránsito por Año (2012-2023)</h3>
+
+    <canvas id="myChartAnios"></canvas>
+
+    <script type="module">
+        // 1. EL fetch AHORA FUNCIONA
+        const anios = await fetch("http://localhost:5000/anios");
+        const dataAnios = await anios.json();
+        const etiquetas = Object.keys(dataAnios);
+        const valores = Object.values(dataAnios);
+
+        const ctx = document.getElementById("myChartAnios");
+
+        // 2. CORRECCIÓN DE LA SINTAXIS DE USO DE VARIABLES
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                // Se usan las variables directamente, sin llaves {}
+                labels: etiquetas,
+                datasets: [
+                    {
+                        label: "Accidentes por Año",
+                        // Se usan las variables directamente, sin llaves {}
+                        data: valores,
+                        backgroundColor: [
+                            "rgb(186, 85, 211)",
+                            "rgb(173, 255, 47)",
+                            "rgb(255, 165, 0)",
+                            "rgb(0, 191, 255)",
+                            "rgb(240, 128, 128)",
+                            "rgb(152, 251, 152)",
+                            "rgb(75, 0, 130)",
+                            "rgb(255, 215, 0)",
+                            "rgb(139, 69, 19)",
+                            "rgb(100, 149, 237)",
+                            "rgb(255, 99, 71)",
+                            "rgb(60, 179, 113)",
+                        ],
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1,
+                    },
+                ],
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+    </script>
+
+    <h3>Grafica de Gravedad</h3>
+
+    <canvas id="myChartGravedad" width="200" height="200"></canvas>
+
+    <script type="module">
+        // 1. EL fetch AHORA FUNCIONA
+        const gravedad = await fetch("http://localhost:5000/gravedad");
+        const dataGravedad = await gravedad.json();
+        const etiquetas = Object.keys(dataGravedad);
+        const valores = Object.values(dataGravedad);
+
+        const ctx = document.getElementById("myChartGravedad");
+
+        // 2. CORRECCIÓN DE LA SINTAXIS DE USO DE VARIABLES
+        new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                // Se usan las variables directamente, sin llaves {}
+                labels: etiquetas,
+                datasets: [
+                    {
+                        label: "Accidentes por Año",
+                        // Se usan las variables directamente, sin llaves {}
+                        data: valores,
+                        backgroundColor: [
+                            "rgb(255, 99, 132)",
+                            "rgb(54, 162, 235)",
+                            "rgb(255, 205, 86)",
+                        ],
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1,
+                    },
+                ],
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+    </script>
+
+    <h3>Correlación entre variables</h3>
+
+    <img src="correlacion.png" alt="Grafica de correrlación"/>
+
+    
+</div>
+
+<style>
+    /* Estilos generales del cuerpo */
+    body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f4f9; /* Fondo muy claro */
+        color: #333; /* Texto principal oscuro */
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Estilo principal del contenedor */
+    #container {
+        max-width: 900px;
+        margin: 40px auto; /* Centrar el contenedor con margen superior/inferior */
+        padding: 30px;
+        background-color: #ffffff; /* Fondo blanco para el contenido */
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra suave para elevación */
+    }
+
+    /* Estilos para los encabezados */
+    h1 {
+        color: #007bff; /* Un color primario (azul) para el título principal */
+        font-size: 2.5em;
+        border-bottom: 3px solid #007bff; /* Línea de separación debajo del título */
+        padding-bottom: 10px;
+        margin-bottom: 5px;
+    }
+
+    h2 {
+        color: #6c757d; /* Gris para el subtítulo */
+        font-size: 1.5em;
+        font-weight: 300; /* Peso de fuente más ligero */
+        margin-top: 0;
+        margin-bottom: 25px;
+    }
+
+    h3 {
+        color: #333;
+        font-size: 1.2em;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        padding-left: 10px;
+        border-left: 4px solid #ffc107; /* Línea de acento amarillo */
+    }
+
+    /* Estilos para párrafos y listas (columnas) */
+    p {
+        margin-bottom: 15px;
+        font-size: 1.05em;
+    }
+
+    div > li {
+        /* Estilo para la lista de columnas */
+        list-style-type: none; /* Eliminar viñetas predeterminadas */
+        background-color: #e9ecef; /* Fondo gris claro */
+        margin: 5px 0;
+        padding: 8px 15px;
+        border-radius: 5px;
+        display: inline-block; /* Mostrar como bloques en línea */
+        margin-right: 10px;
+        font-size: 0.9em;
+        color: #495057;
+        font-weight: 600;
+    }
+
+    /* Estilos para la tabla de barrios */
+    table {
+        width: 100%;
+        border-collapse: collapse; /* Bordes de celdas unidos */
+        margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    th {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    tr:first-child th {
+        /* Encabezados de la tabla */
+        background-color: #007bff;
+        color: white;
+        font-weight: bold;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    table tr:nth-child(even) {
+        /* Filas pares con fondo diferente (cebreado) */
+        background-color: #f8f9fa;
+    }
+
+    table tr:hover {
+        /* Efecto al pasar el mouse por encima de una fila */
+        background-color: #e2e6ea;
+        cursor: pointer;
+    }
+    #myChartGravedad {
+        max-width: 50vh;
+        max-height: 50vh;
+    }
+    img {
+        max-width: 100vh;
+        max-height: 100vh;
+    }
+</style>

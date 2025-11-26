@@ -1,0 +1,352 @@
+---
+
+const infoResponse = await fetch("  ");
+const infoData = await infoResponse.json();
+const mlFeatures = infoData.caracteristicas_ml || [];
+const targetClasses = infoData.target_classes || [];
+const targetDistribution = infoData.distribucion_target || {};
+
+const trainResponse = await fetch("http://localhost:5000/ml/train");
+const trainData = await trainResponse.json();
+const mlResults = trainData.resultados_entrenamiento || {};
+
+const patternsResponse = await fetch("http://localhost:5000/ml/patterns");
+const patternsData = await patternsResponse.json();
+const temporalPatterns = patternsData.patrones_temporales || {};
+const vehicleInvolvement = patternsData.vehiculos_involucrados || {};
+
+const modelNames = Object.keys(mlResults);
+
+const formatConfusionMatrix = (matrix: number[][], classes: string[]) => { return matrix.map((row, i) => ({ predicted: classes[i], actual: row.map((count, j) => ({ class: classes[j], count: count })) })); };
+
+
+---
+
+<div id="ml-container" class="mt-8">
+<h1>Resultados del Análisis de Machine Learning y Patrones</h1>
+<p class="description">
+Esta sección presenta los resultados de la clasificación de gravedad de accidentes
+utilizando K-Nearest Neighbors, Árbol de Decisión y Naive Bayes, junto con
+patrones temporales y vehiculares clave.
+</p>
+
+<!-- Sección de Información de Preparación (ML Info) -->
+<div class="card">
+    <h3>Preparación de Datos y Variable Objetivo</h3>
+    <p><strong>Características (Features) utilizadas para ML:</strong></p>
+    <div class="features-list">
+        {
+            mlFeatures.map((col: string) => (
+                <span class="feature-tag">{col}</span>
+            ))
+        }
+    </div>
+
+    <p class="mt-4">
+        <strong>Clases de Gravedad del Accidente:</strong>
+        {targetClasses.join(" | ")}
+    </p>
+
+    <h4>Distribución de la Variable Objetivo</h4>
+    <table class="data-table">
+        <tr>
+            <th>Clase</th>
+            <th>Cantidad de Registros</th>
+        </tr>
+        {
+            Object.entries(targetDistribution).map(([clase, count]) => (
+                <tr>
+                    <td>{targetClasses[parseInt(clase)] || clase}</td>
+                    <td>{count}</td>
+                </tr>
+            ))
+        }
+    </table>
+</div>
+
+<!-- Sección de Patrones (EDA) -->
+<div class="card">
+    <h3>Patrones Temporales y Vehiculares (EDA)</h3>
+    <div class="grid-2-cols">
+        <div>
+            <h4>Patrones Temporales Clave</h4>
+            <p>
+                <strong>Hora Pico:</strong>
+                {temporalPatterns.hora_pico_accidentes} horas. <br />
+                <strong>Día más Crítico (1=Lunes, 7=Domingo):</strong>
+                {temporalPatterns.dia_mas_accidentes}
+                <br />
+                <strong>Mes más Crítico (Numérico):</strong>
+                {temporalPatterns.mes_mas_accidentes}
+            </p>
+        </div>
+        <div>
+            <h4>Vehículos Más Involucrados (Total de Participación)</h4>
+            <table class="data-table">
+                {
+                    Object.entries(vehicleInvolvement).map(
+                        ([vehicle, total]) => (
+                            <tr>
+                                <td>{vehicle}</td>
+                                <td>{total}</td>
+                            </tr>
+                        ),
+                    )
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Resultados de Entrenamiento (ML Train) -->
+<div class="card">
+    <h3>Resultados y Métricas de los Modelos de Clasificación</h3>
+
+    <div class="grid-3-cols">
+        {
+            modelNames.map((modelName: string) => (
+                <div class="model-result-box">
+                    <h4>{modelName}</h4>
+                    <p class="accuracy-score">
+                        Accuracy:{" "}
+                        <strong>
+                            {(mlResults[modelName].accuracy * 100).toFixed(2)}%
+                        </strong>
+                    </p>
+
+                    <details>
+                        <summary>Ver Parámetros y Reporte Detallado</summary>
+
+                        <h5>Mejores Parámetros (GridSearch)</h5>
+                        <pre class="params-pre">
+                            {JSON.stringify(
+                                mlResults[modelName].mejores_params,
+                                null,
+                                2,
+                            )}
+                        </pre>
+
+                        <h5>Reporte de Clasificación (Macro Avg)</h5>
+                        <table class="data-table">
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1-Score</th>
+                            </tr>
+                            <tr>
+                                <td>Macro Avg</td>
+                                <td>
+                                    {mlResults[modelName].classification_report[
+                                        "macro avg"
+                                    ]?.precision?.toFixed(3) || "N/A"}
+                                </td>
+                                <td>
+                                    {mlResults[modelName].classification_report[
+                                        "macro avg"
+                                    ]?.recall?.toFixed(3) || "N/A"}
+                                </td>
+                                <td>
+                                    {mlResults[modelName].classification_report[
+                                        "macro avg"
+                                    ]?.f1_score?.toFixed(3) || "N/A"}
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h5>Matriz de Confusión</h5>
+                        <div class="confusion-matrix-container">
+                            <table class="matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th>Predicción \ Real</th>
+                                        {targetClasses.map((clase: string) => (
+                                            <th>{clase}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {formatConfusionMatrix(
+                                        mlResults[modelName].confusion_matrix,
+                                        targetClasses,
+                                    ).map((row) => (
+                                        <tr>
+                                            <th>{row.predicted}</th>
+                                            {row.actual.map((cell) => (
+                                                <td
+                                                    class={
+                                                        row.predicted ===
+                                                        row.predicted
+                                                            ? "highlight"
+                                                            : ""
+                                                    }
+                                                >
+                                                    {cell.count}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <p class="matrix-info">
+                                Las celdas con el fondo más claro indican
+                                predicciones correctas.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+            ))
+        }
+    </div>
+</div>
+
+<style>
+    h1 {
+        color: #007bff;
+        font-size: 2.5em;
+        border-bottom: 3px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 5px;
+    }
+    h3 {
+        color: #333;
+        font-size: 1.2em;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        padding-left: 10px;
+        border-left: 4px solid #ffc107;
+    }
+    /* Estilos Específicos del Contenedor ML */
+    #ml-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #f8f9fa; /* Fondo ligeramente gris para diferenciar */
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .description {
+        margin-bottom: 30px;
+        font-style: italic;
+        color: #6c757d;
+    }
+    .card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        border-top: 5px solid #007bff;
+    }
+
+    /* Tags de Features */
+    .features-list {
+        margin-bottom: 15px;
+    }
+    .feature-tag {
+        display: inline-block;
+        background-color: #e9f0ff;
+        color: #007bff;
+        padding: 4px 10px;
+        margin: 5px 5px 5px 0;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: 600;
+        border: 1px solid #cce0ff;
+    }
+
+    /* Tablas de Datos */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .data-table th,
+    .data-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 0.95em;
+    }
+    .data-table th {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .data-table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    /* Resultados de Modelos */
+    .grid-2-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    .grid-3-cols {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    .model-result-box {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 6px;
+        background-color: #fff;
+    }
+    .accuracy-score {
+        font-size: 1.2em;
+        color: #28a745; /* Verde para el score */
+    }
+    .model-result-box h4 {
+        border-left: none;
+        padding-left: 0;
+        margin-top: 0;
+        color: #007bff;
+        border-bottom: 1px dashed #cce0ff;
+        padding-bottom: 5px;
+    }
+    .params-pre {
+        background-color: #f4f4f4;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.8em;
+    }
+
+    /* Matriz de Confusión */
+    .confusion-matrix-container {
+        overflow-x: auto;
+        margin-top: 10px;
+    }
+    .matrix-table {
+        border-collapse: collapse;
+        min-width: 100%;
+        text-align: center;
+        font-size: 0.9em;
+    }
+    .matrix-table th,
+    .matrix-table td {
+        padding: 8px;
+        border: 1px solid #ccc;
+    }
+    .matrix-table thead th {
+        background-color: #007bff;
+        color: white;
+        font-weight: bold;
+    }
+    .matrix-table tbody th {
+        background-color: #f1f1f1;
+        font-weight: normal;
+        text-align: left;
+    }
+    .matrix-table td.highlight {
+        /* Diagonal (predicciones correctas) */
+        background-color: #d4edda; /* Verde claro */
+        font-weight: bold;
+    }
+    .matrix-info {
+        font-size: 0.8em;
+        margin-top: 5px;
+        color: #6c757d;
+    }
+</style>

@@ -1,0 +1,15 @@
+{
+  "name": "proyecto-ciencia-de-datos",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.15.5",
+    "chart.js": "^4.5.1"
+  }
+}
